@@ -37,10 +37,10 @@ const T = {
     lang: 'en',
     base: '',
     other: { href: 'es/', label: 'Español', code: 'es' },
-    title: 'Ovilo — Daily word games. No ads. No account.',
-    description: 'Seven word and number games in one iPhone app: crosswords, word search, letter wheel, guess the word, A to Z and sudoku. No ads, no account, no internet needed.',
-    promise: ['Daily word games.', 'No ads.', 'No account.'],
-    sub: 'Seven games in one app: crosswords, word search, sudoku and more. A new one to play every day.',
+    title: 'Ovilo — Six new puzzles every day. No ads. No coins. Works offline.',
+    description: 'Crosswords, word search, letter wheel, guess the word and sudoku for iPhone: a new level of each every day, and A to Z every Friday. No ads, no coins, no internet needed.',
+    promise: ['Six new puzzles every day.', 'No ads.', 'No coins.', 'Works offline.'],
+    sub: 'Crosswords, word search, sudoku and more: a new level of each one every day, and A to Z every Friday. One free every day; all of them with Ovilo Pro.',
     soon: 'Coming soon',
     soonNote: 'Coming soon to iPhone and iPad.',
     badgeAlt: 'Download on the App Store',
@@ -48,13 +48,14 @@ const T = {
     videoNote: 'The preview shows the app in Spanish. Ovilo is in English too.',
     whyTitle: 'Just the games',
     why: [
-      ['No ads', 'None. No banners, no videos to sit through between levels.'],
-      ['No account', 'Open it and play. No sign-up, no email, no profile.'],
-      ['No internet', 'Every level is on your phone. Play on a plane or in the subway.'],
-      ['A free game every day', 'The game of the day is the same for everyone, and it is always free.'],
+      ['ads', 'No ads', 'None. No banners, no videos to sit through between levels.'],
+      ['coins', 'No coins', 'No coins to earn or spend, and no lives to run out of.'],
+      ['offline', 'No internet', 'Every level is on your phone. Play on a plane or in the subway.'],
+      ['daily', 'A free game every day', 'The game of the day is the same for everyone, and it is always free.'],
+      ['account', 'No account', 'Open it and play. No sign-up, no email, no profile.'],
     ],
     gamesTitle: 'Seven games, one app',
-    gamesSub: 'Each one with three difficulties, and hints for when you get stuck.',
+    gamesSub: 'A new level of each one every day, A to Z every Friday, and hints for when you get stuck.',
     names: { crosswordAuto: 'Arrow Crossword', crosswordClassic: 'Classic Crossword', wordsearch: 'Word Search', wordconnect: 'Letter Wheel', wordguess: 'Guess the Word', alphabet: 'A to Z', sudoku: 'Sudoku' },
     how: {
       crosswordAuto: 'The clues sit inside the grid, each with an arrow that shows where the answer goes.',
@@ -69,7 +70,7 @@ const T = {
     weekTitle: 'A free game, every day',
     weekSub: 'Each day of the week has its game. Play it, keep your streak going, come back tomorrow.',
     days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    freeNote: 'Also free: the first two Easy levels of every game. Ovilo Pro unlocks every level, the archive of earlier days and unlimited hints.',
+    freeNote: 'Also free: one sample level of every game. Ovilo Pro unlocks all the games every day, the archive of earlier days and unlimited hints.',
     endTitle: 'Shall we play today’s?',
     privacy: 'Privacy Policy',
     support: 'Support',
@@ -83,10 +84,10 @@ const T = {
     lang: 'es',
     base: '../',
     other: { href: '../', label: 'English', code: 'en' },
-    title: 'Ovilo — Juegos de palabras para todos los días. Sin anuncios. Sin cuenta.',
-    description: 'Siete juegos de palabras y números en una sola app para iPhone: crucigramas, sopa de letras, rueda de letras, adivina la palabra, de la A a la Z y sudoku. Sin anuncios, sin cuenta y sin internet.',
-    promise: ['Un juego de palabras cada día.', 'Sin anuncios.', 'Sin cuenta.'],
-    sub: 'Siete juegos en una sola app: crucigramas, sopa de letras, sudoku y más. Cada día, uno nuevo para jugar.',
+    title: 'Ovilo — Seis juegos nuevos cada día. Sin anuncios. Sin monedas. Sin internet.',
+    description: 'Crucigramas, sopa de letras, rueda de letras, adivina la palabra y sudoku para iPhone: un nivel nuevo de cada uno todos los días, y De la A a la Z cada viernes. Sin anuncios, sin monedas y sin internet.',
+    promise: ['Seis juegos nuevos cada día.', 'Sin anuncios.', 'Sin monedas.', 'Sin internet.'],
+    sub: 'Crucigramas, sopa de letras, sudoku y más: un nivel nuevo de cada uno todos los días, y De la A a la Z cada viernes. Gratis, uno por día; con Ovilo Pro, todos.',
     soon: 'Próximamente',
     soonNote: 'Próximamente en iPhone y iPad.',
     badgeAlt: 'Descárgalo en el App Store',
@@ -94,13 +95,14 @@ const T = {
     videoNote: '',
     whyTitle: 'Solo los juegos',
     why: [
-      ['Sin anuncios', 'Ninguno. Ni carteles ni videos que esperar entre nivel y nivel.'],
-      ['Sin cuenta', 'La abres y juegas. Sin registro, sin correo, sin perfil.'],
-      ['Sin internet', 'Todos los niveles están en tu teléfono. Juega en el avión o en el metro.'],
-      ['Un juego gratis cada día', 'El juego del día es el mismo para todos, y siempre es gratis.'],
+      ['ads', 'Sin anuncios', 'Ninguno. Ni carteles ni videos que esperar entre nivel y nivel.'],
+      ['coins', 'Sin monedas', 'Ni monedas que juntar o gastar, ni vidas que se acaban.'],
+      ['offline', 'Sin internet', 'Todos los niveles están en tu teléfono. Juega en el avión o en el metro.'],
+      ['daily', 'Un juego gratis cada día', 'El juego del día es el mismo para todos, y siempre es gratis.'],
+      ['account', 'Sin cuenta', 'La abres y juegas. Sin registro, sin correo, sin perfil.'],
     ],
     gamesTitle: 'Siete juegos, una app',
-    gamesSub: 'Cada uno con tres dificultades, y pistas para cuando te atascas.',
+    gamesSub: 'Un nivel nuevo de cada uno todos los días, De la A a la Z cada viernes, y pistas para cuando te atascas.',
     names: { crosswordAuto: 'Crucigrama autodefinido', crosswordClassic: 'Crucigrama tradicional', wordsearch: 'Sopa de letras', wordconnect: 'Rueda de letras', wordguess: 'Adivina la palabra', alphabet: 'De la A a la Z', sudoku: 'Sudoku' },
     how: {
       crosswordAuto: 'Las definiciones van dentro de la grilla, cada una con una flecha que señala dónde va la respuesta.',
@@ -115,7 +117,7 @@ const T = {
     weekTitle: 'Un juego gratis, todos los días',
     weekSub: 'Cada día de la semana tiene su juego. Juégalo, sigue tu racha y vuelve mañana.',
     days: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
-    freeNote: 'También gratis: los dos primeros niveles de Fácil de cada juego. Ovilo Pro abre todos los niveles, el archivo de los días anteriores y pistas sin límite.',
+    freeNote: 'También gratis: un nivel de muestra de cada juego. Ovilo Pro abre todos los juegos todos los días, el archivo de los días anteriores y pistas sin límite.',
     endTitle: '¿Jugamos el de hoy?',
     privacy: 'Política de privacidad',
     support: 'Soporte',
@@ -252,6 +254,7 @@ const ICONS = {
   ads: '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
   account: '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/><path d="M3.5 3.5l17 17"/>',
   offline: '<path d="M2.5 9.5a14 14 0 0 1 19 0"/><path d="M6 13a9 9 0 0 1 12 0"/><path d="M9.3 16.4a4.2 4.2 0 0 1 5.4 0"/><circle cx="12" cy="19.5" r=".8" fill="currentColor"/><path d="M3.5 3.5l17 17"/>',
+  coins: '<circle cx="9" cy="9" r="5.5"/><path d="M14.2 10.2a5.5 5.5 0 1 1-4 4"/><path d="M3.5 3.5l17 17"/>',
   daily: '<rect x="3.5" y="5" width="17" height="15.5" rx="3.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/><path d="M8.5 15l2.3 2.3 4.7-4.8"/>',
 };
 const icon = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]}</svg>`;
@@ -343,8 +346,8 @@ function page(t) {
 
   <section class="why">
     <h2 class="reveal">${esc(t.whyTitle)}</h2>
-    <ul class="why-grid">${['ads', 'account', 'offline', 'daily'].map((k, i) => `
-      <li class="reveal" style="--i:${i}"><span class="why-icon">${icon(k)}</span><h3>${esc(t.why[i][0])}</h3><p>${esc(t.why[i][1])}</p></li>`).join('')}
+    <ul class="why-grid">${t.why.map(([k, title, text], i) => `
+      <li class="reveal" style="--i:${i}"><span class="why-icon">${icon(k)}</span><h3>${esc(title)}</h3><p>${esc(text)}</p></li>`).join('')}
     </ul>
   </section>
 
