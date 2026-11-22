@@ -7,7 +7,11 @@ import fs from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 
-import { APP_STORE_URL, GAME_IDS, sharePage, shareTarget } from './build.mjs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import os from 'node:os';
+import path from 'node:path';
+
+import { APP_STORE_URL, GAME_IDS, sharePage, shareTarget, storeUrlProblem } from './build.mjs';
 
 const STORE = 'https://apps.apple.com/app/apple-store/id6834930963?pt=123&mt=8';
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1';
@@ -101,4 +105,53 @@ test('la página no pide nada a terceros ni guarda nada', () => {
   const hosts = [...html.matchAll(/https?:\/\/([^/"'\s]+)/g)].map((m) => m[1]);
   assert.deepEqual([...new Set(hosts)].filter((h) => h !== 'ovilo.app' && !(APP_STORE_URL ?? '').includes(h)), []);
   assert.match(html, /<meta name="robots" content="noindex">/);
+});
+
+test('APP_STORE_URL: sin publicar vale; publicado, tiene que traer pt y no traer ct', () => {
+  assert.equal(storeUrlProblem(null), null);
+  assert.equal(storeUrlProblem(STORE), null);
+  assert.match(storeUrlProblem('https://apps.apple.com/app/id6834930963'), /pt=/);
+  assert.match(storeUrlProblem('https://apps.apple.com/app/id6834930963?mt=8'), /pt=/);
+  assert.match(storeUrlProblem('https://apps.apple.com/app/id6834930963?pt='), /pt=/);
+  assert.match(storeUrlProblem('https://apps.apple.com/app/id6834930963?pt=<proveedor>&mt=8'), /pt=/);
+  // «pt=» dentro de otro parámetro no cuenta.
+  assert.match(storeUrlProblem('https://apps.apple.com/app/id6834930963?opt=1'), /pt=/);
+  assert.match(storeUrlProblem('https://apps.apple.com/app/id6834930963?pt=123&ct=web'), /ct=/);
+  assert.match(storeUrlProblem('http://apps.apple.com/app/id1?pt=123'), /apps\.apple\.com/);
+  assert.match(storeUrlProblem('https://example.com/app?pt=123'), /apps\.apple\.com/);
+  assert.match(storeUrlProblem('id6834930963'), /válida/);
+});
+
+test('el APP_STORE_URL de hoy pasa', () => {
+  assert.equal(storeUrlProblem(APP_STORE_URL), null);
+});
+
+// `node build.mjs` de verdad, sobre una copia del sitio con otro APP_STORE_URL.
+function buildWith(value) {
+  // `realpath`: en la Mac la carpeta temporal es un enlace, y `build.mjs` compara su propia ruta.
+  const dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'ovilo-web-'));
+  try {
+    execFileSync('cp', ['-R', new URL('./assets', import.meta.url).pathname, dir]);
+    const src = fs.readFileSync(new URL('./build.mjs', import.meta.url), 'utf8');
+    const edited = src.replace(/^const APP_STORE_URL = .*;$/m, `const APP_STORE_URL = ${JSON.stringify(value)};`);
+    assert.ok(edited.includes(`const APP_STORE_URL = ${JSON.stringify(value)};`), 'no encontré APP_STORE_URL en build.mjs');
+    fs.writeFileSync(path.join(dir, 'build.mjs'), edited);
+    const run = spawnSync(process.execPath, [path.join(dir, 'build.mjs')], { encoding: 'utf8' });
+    return { status: run.status, stderr: run.stderr, wrote: fs.existsSync(path.join(dir, 's', 'index.html')) };
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test('node build.mjs falla, sin escribir nada, si el link de la tienda no lleva pt', () => {
+  const run = buildWith('https://apps.apple.com/app/id6834930963');
+  assert.equal(run.status, 1);
+  assert.match(run.stderr, /pt=/);
+  assert.equal(run.wrote, false);
+});
+
+test('node build.mjs pasa con el link de campaña', () => {
+  const run = buildWith(STORE);
+  assert.equal(run.status, 0, run.stderr);
+  assert.equal(run.wrote, true);
 });
