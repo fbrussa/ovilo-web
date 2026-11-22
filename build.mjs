@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 //   https://apps.apple.com/app/apple-store/id6834930963?pt=<proveedor>&mt=8
 // `pt` sale de generar un link de campaña en App Store Connect (Analytics > Acquisition >
 // Campaigns > +) y es el mismo para toda la cuenta. `s/` le suma `ct=share-<juego>`.
+// Sin `pt`, este script corta sin escribir nada (`storeUrlProblem`).
 const APP_STORE_URL = null;
 
 const LEGAL = 'https://foundryappsglobal.github.io/legal/ovilo/';
@@ -460,8 +461,33 @@ function sharePage() {
 `;
 }
 
+// Qué le falta a `APP_STORE_URL` para publicarse, o `null` si está bien. `null` (sin publicar) vale.
+// Sin el token del proveedor (`pt`) el link anda igual y App Analytics no cuenta ninguna descarga
+// de compartir: nada falla, así que tiene que fallar acá.
+export function storeUrlProblem(url) {
+  if (url === null) return null;
+  let u;
+  try {
+    u = new URL(url);
+  } catch {
+    return 'APP_STORE_URL no es una dirección válida.';
+  }
+  if (u.protocol !== 'https:' || u.hostname !== 'apps.apple.com') return 'APP_STORE_URL tiene que ser un link https://apps.apple.com/…';
+  if (!/^\d+$/.test(u.searchParams.get('pt') ?? '')) {
+    return 'APP_STORE_URL no lleva el token del proveedor (pt=<número>). Sin él, App Analytics no cuenta las descargas que vienen de compartir. Sale de generar un link de campaña en App Store Connect (Analytics > Acquisition > Campaigns > +).';
+  }
+  // El token de campaña lo pone `s/`, por juego: uno fijo acá lo pisaría.
+  if (u.searchParams.has('ct')) return 'APP_STORE_URL no lleva ct=: lo suma la página s/ (ct=share-<juego>).';
+  return null;
+}
+
 // `node build.mjs` escribe las páginas; importarlo (`test.mjs`) no escribe nada.
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const problem = storeUrlProblem(APP_STORE_URL);
+  if (problem !== null) {
+    console.error(`build.mjs: ${problem}`);
+    process.exit(1);
+  }
   fs.writeFileSync(new URL('./index.html', import.meta.url), page(T.en));
   fs.mkdirSync(new URL('./es/', import.meta.url), { recursive: true });
   fs.writeFileSync(new URL('./es/index.html', import.meta.url), page(T.es));

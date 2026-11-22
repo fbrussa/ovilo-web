@@ -49,6 +49,9 @@ token del proveedor (`pt`): `https://apps.apple.com/app/apple-store/id6834930963
 +) y es el mismo para toda la cuenta. Apple pide los dos tokens: con `ct` solo, la campaña no
 aparece.
 
+**`node build.mjs` falla si `APP_STORE_URL` no es `null` y no trae `pt=<número>`**, sin escribir
+nada: publicar sin `pt` no rompe nada a la vista y deja la campaña sin contar descargas.
+
 ## De dónde sale cada cosa
 
 | Qué | Origen |
