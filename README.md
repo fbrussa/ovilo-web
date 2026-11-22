@@ -12,20 +12,42 @@ publicado con GitHub Pages desde `main`.
 Las dos páginas salen de una sola plantilla:
 
 ```
-node build.mjs      # escribe index.html y es/index.html
+node build.mjs          # escribe index.html, es/index.html y s/index.html
+node --test test.mjs    # las pruebas del link de compartir
 ```
 
 Los textos de los dos idiomas están arriba de `build.mjs` (`T.en`, `T.es`). Los estilos, en
-`assets/site.css`; el poco JS, en `assets/site.js`. `index.html` y `es/index.html` se commitean:
+`assets/site.css`; el poco JS, en `assets/site.js`. `index.html`, `es/index.html` y `s/index.html` se commitean:
 Pages los sirve tal cual, sin compilar nada.
 
 **Todas las rutas son relativas.** Una ruta que empieza con `/` anda en `ovilo.app` y se rompe en
 `fbrussa.github.io/ovilo-web/`.
 
+## El link de compartir (`s/`)
+
+La app comparte cada resultado con un link `https://ovilo.app/s/?g=<juego>` (`s/index.html`, que
+también sale de `build.mjs`):
+
+- **En iPhone y iPad** lleva a la ficha de la App Store con el token de campaña de Apple
+  `ct=share-<juego>`: App Analytics cuenta las descargas que vienen de compartir, por juego. Es de
+  Apple; el sitio no mide nada.
+- **En cualquier otro lado**, el sitio, en el idioma del navegador.
+- **Hasta que la app esté publicada** (`APP_STORE_URL` en `null`), el sitio en todos los casos.
+
+GitHub Pages no redirige desde el servidor, así que lo decide un script en la página. Se prueba con
+`node --test test.mjs`.
+
 ## Cuando la app esté publicada
 
 En `build.mjs`, poner el link de la App Store en `APP_STORE_URL` y correr `node build.mjs`: el
-badge pasa a ser un link y desaparece «Próximamente».
+badge pasa a ser un link, desaparece «Próximamente» y el link de compartir empieza a mandar el
+iPhone y el iPad a la ficha. **Es el único dato que cambia.**
+
+Para que App Analytics cuente las descargas por juego, ese link tiene que ser el de campaña, con el
+token del proveedor (`pt`): `https://apps.apple.com/app/apple-store/id6834930963?pt=<proveedor>&mt=8`.
+`pt` sale de generar un link de campaña en App Store Connect (Analytics > Acquisition > Campaigns >
++) y es el mismo para toda la cuenta. Apple pide los dos tokens: con `ct` solo, la campaña no
+aparece.
 
 ## De dónde sale cada cosa
 

@@ -1,13 +1,22 @@
 #!/usr/bin/env node
-// Genera index.html (inglés) y es/index.html (español) desde una sola plantilla.
+// Genera index.html (inglés), es/index.html (español) y s/index.html (el link de compartir) desde
+// una sola plantilla.
 //   node build.mjs
 // Sin dependencias. Las dos páginas generadas se commitean: GitHub Pages las sirve tal cual.
 // Todas las rutas son relativas (`base`): el sitio anda igual en ovilo.app y en
 // fbrussa.github.io/ovilo-web/.
 import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 // Cuando la app esté publicada: poner acá el link de la App Store y volver a correr el script.
-// Con `null`, el badge se muestra sin link y con el cartel de «Próximamente».
+// Con `null`, el badge se muestra sin link y con el cartel de «Próximamente», y el link de
+// compartir (`s/`) lleva al sitio en todos los casos.
+//
+// Es el único dato que cambia. Para que App Analytics cuente las descargas que vienen de compartir
+// tiene que ser el link de campaña de App Store Connect, con el token del proveedor (`pt`):
+//   https://apps.apple.com/app/apple-store/id6834930963?pt=<proveedor>&mt=8
+// `pt` sale de generar un link de campaña en App Store Connect (Analytics > Acquisition >
+// Campaigns > +) y es el mismo para toda la cuenta. `s/` le suma `ct=share-<juego>`.
 const APP_STORE_URL = null;
 
 const LEGAL = 'https://foundryappsglobal.github.io/legal/ovilo/';
@@ -387,7 +396,79 @@ function page(t) {
 `;
 }
 
-fs.writeFileSync(new URL('./index.html', import.meta.url), page(T.en));
-fs.mkdirSync(new URL('./es/', import.meta.url), { recursive: true });
-fs.writeFileSync(new URL('./es/index.html', import.meta.url), page(T.es));
-console.log('index.html, es/index.html');
+// ---------------------------------------------------------------------------------------------
+// El link de compartir: `https://ovilo.app/s/?g=<juego>`, lo que la app pone en lo que se comparte.
+//
+// - En iPhone y iPad lleva a la ficha de la App Store con el token de campaña de Apple
+//   `ct=share-<juego>`: App Analytics cuenta las descargas que vienen de compartir, por juego. Es de
+//   Apple; acá no se mide nada.
+// - En cualquier otro lado, el sitio, en el idioma del navegador.
+// - Mientras `APP_STORE_URL` es `null`, el sitio en todos los casos.
+//
+// GitHub Pages no redirige desde el servidor: lo decide este script, que va entero en la página.
+// `test.mjs` lo prueba. Va escrito en ES5, como `assets/site.js`.
+export function shareTarget(store, games, search, ua, touchPoints, language, savedLang) {
+  var m = /[?&]g=([^&#]*)/.exec(search || '');
+  var g = m ? m[1] : '';
+  // Sólo un juego conocido entra en el token: lo demás cuenta como «share», sin juego.
+  var campaign = games.indexOf(g) >= 0 ? 'share-' + g : 'share';
+  // El iPad se presenta como una Mac; lo delata la pantalla táctil.
+  var ios = /iPhone|iPad|iPod/.test(ua || '') || (/Macintosh/.test(ua || '') && touchPoints > 1);
+  if (store && ios) return store + (store.indexOf('?') < 0 ? '?' : '&') + 'ct=' + campaign;
+  var lang = savedLang === 'es' || savedLang === 'en' ? savedLang : /^es\b/i.test(language || '') ? 'es' : 'en';
+  // La misma regla que el sitio: el idioma elegido en el selector y, si no hay, el del navegador.
+  return lang === 'es' ? '../es/' : '../';
+}
+
+function sharePage() {
+  const t = T.en;
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>${esc(t.title)}</title>
+<meta name="description" content="${esc(t.description)}">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#FFF6EC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1A1622" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta property="og:type" content="website">
+<meta property="og:title" content="${esc(t.title)}">
+<meta property="og:description" content="${esc(t.description)}">
+<meta property="og:image" content="https://ovilo.app/assets/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../assets/img/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="../assets/img/icon-180.png">
+<script>
+// El link de compartir de la app: a la App Store en iPhone y iPad, al sitio en lo demás.
+// Sin cookies, sin analítica, sin pedidos a terceros.
+(function () {
+  ${shareTarget.toString().replace(/\n/g, '\n  ')}
+  var saved;
+  try { saved = localStorage.getItem('ovilo-lang'); } catch (e) {}
+  location.replace(shareTarget(${JSON.stringify(APP_STORE_URL)}, ${JSON.stringify(GAMES.map((g) => g.id))}, location.search, navigator.userAgent, navigator.maxTouchPoints || 0, navigator.language, saved));
+})();
+</script>
+<noscript><meta http-equiv="refresh" content="0; url=../"></noscript>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#FFF6EC;color:#2A2233;font:600 17px/1.4 ui-rounded,system-ui,sans-serif}a{color:#CF4A0C}@media (prefers-color-scheme:dark){body{background:#1A1622;color:#F7F0E8}a{color:#FF8A3D}}</style>
+</head>
+<body>
+<p><a href="../">Ovilo</a></p>
+</body>
+</html>
+`;
+}
+
+// `node build.mjs` escribe las páginas; importarlo (`test.mjs`) no escribe nada.
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  fs.writeFileSync(new URL('./index.html', import.meta.url), page(T.en));
+  fs.mkdirSync(new URL('./es/', import.meta.url), { recursive: true });
+  fs.writeFileSync(new URL('./es/index.html', import.meta.url), page(T.es));
+  fs.mkdirSync(new URL('./s/', import.meta.url), { recursive: true });
+  fs.writeFileSync(new URL('./s/index.html', import.meta.url), sharePage());
+  console.log('index.html, es/index.html, s/index.html');
+}
+
+export const GAME_IDS = GAMES.map((g) => g.id);
+export { APP_STORE_URL, sharePage };
