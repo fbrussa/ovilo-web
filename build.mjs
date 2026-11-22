@@ -55,7 +55,7 @@ const T = {
     soonNote: 'Coming soon to iPhone and iPad.',
     badgeAlt: 'Download on the App Store',
     videoLabel: 'A 30-second look at Ovilo',
-    videoNote: 'The preview shows the app in Spanish. Ovilo is in English too.',
+    videoNote: '',
     whyTitle: 'Just the games',
     why: [
       ['ads', 'No ads', 'None. No banners, no videos to sit through between levels.'],
@@ -275,9 +275,8 @@ function page(t) {
   const cta = APP_STORE_URL
     ? `<a class="store" href="${esc(APP_STORE_URL)}">${badge}</a>`
     : `<div class="store" aria-label="${esc(t.soonNote)}"><span class="soon">${esc(t.soon)}</span>${badge}</div>`;
-  const video = t.lang === 'es'
-    ? `<video class="screen" src="${b}assets/video/ovilo-promo-es.mp4" poster="${b}assets/video/poster.jpg" width="720" height="1280" autoplay muted loop playsinline controls preload="metadata" aria-label="${esc(t.videoLabel)}"></video>`
-    : `<video class="screen" src="${b}assets/video/ovilo-promo-es.mp4" poster="${b}assets/video/poster.jpg" width="720" height="1280" autoplay muted loop playsinline preload="metadata" aria-label="${esc(t.videoLabel)}"></video>`;
+  const poster = t.lang === 'es' ? 'poster.jpg' : 'poster-en.jpg';
+  const video = `<video class="screen" src="${b}assets/video/ovilo-promo-${t.lang}.mp4" poster="${b}assets/video/${poster}" width="720" height="1280" autoplay muted loop playsinline controls preload="metadata" aria-label="${esc(t.videoLabel)}"></video>`;
 
   const games = GAMES.map((g, i) => `
       <article class="game reveal${i % 2 ? ' flip' : ''}" style="--g:${g.base};--deep:${g.deep};--on:${g.on}">

@@ -59,7 +59,7 @@ nada: publicar sin `pt` no rompe nada a la vista y deja la campaña sin contar d
 | Colores, ilustraciones de los juegos, nombres y cómo se juega | La app (`src/features/games/` y sus diccionarios) |
 | Símbolo e ícono | `design/brand/` de la app |
 | Capturas (`assets/shots/`) | La app corriendo en el simulador, en cada idioma |
-| Video (`assets/video/`) | `ovilo-promo-es.mp4`, recomprimido a H.264 720×1280 y 30 fps |
+| Video (`assets/video/`) | Los promos en español y en inglés, recomprimidos a H.264 720×1280 y 30 fps |
 | Badges de la App Store | Los oficiales de Apple (App Store Marketing Tools), sin modificar |
 | Nunito (`assets/fonts/`) | Respaldo de la tipografía redondeada del sistema fuera de Apple. Licencia OFL, incluida |
 
