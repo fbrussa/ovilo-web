@@ -20,7 +20,8 @@ import { fileURLToPath } from 'node:url';
 // Sin `pt`, este script corta sin escribir nada (`storeUrlProblem`).
 const APP_STORE_URL = null;
 
-const LEGAL = 'https://foundryappsglobal.github.io/legal/ovilo/';
+// Privacidad y soporte viven en este sitio (FO-597): `privacy/`, `support/` y lo mismo bajo `es/`.
+// Son las URLs de la ficha de la App Store y las que abre la app: no se renombran.
 
 // Los colores de cada juego, de `src/features/games/colors.ts` de la app.
 const GAMES = [
@@ -84,8 +85,7 @@ const T = {
     endTitle: 'Shall we play today’s?',
     privacy: 'Privacy Policy',
     support: 'Support',
-    privacyHref: 'privacy.html',
-    supportHref: 'support.html',
+    home: 'Home',
     noTrack: 'This site uses no cookies and no trackers.',
     credit: 'Apple, the Apple logo, iPhone and iPad are trademarks of Apple Inc., registered in the U.S. and other countries and regions. App Store is a service mark of Apple Inc.',
     switchLabel: 'Language',
@@ -131,8 +131,7 @@ const T = {
     endTitle: '¿Jugamos el de hoy?',
     privacy: 'Política de privacidad',
     support: 'Soporte',
-    privacyHref: 'privacy.es.html',
-    supportHref: 'support.es.html',
+    home: 'Inicio',
     noTrack: 'Este sitio no usa cookies ni rastreadores.',
     credit: 'Apple, el logotipo de Apple, iPhone y iPad son marcas comerciales de Apple Inc., registradas en EE. UU. y en otros países y regiones. App Store es una marca de servicio de Apple Inc.',
     switchLabel: 'Idioma',
@@ -384,8 +383,8 @@ function page(t) {
 
 <footer>
   <nav aria-label="Legal">
-    <a href="${LEGAL}${t.privacyHref}">${esc(t.privacy)}</a>
-    <a href="${LEGAL}${t.supportHref}">${esc(t.support)}</a>
+    <a href="privacy/">${esc(t.privacy)}</a>
+    <a href="support/">${esc(t.support)}</a>
   </nav>
   <p>${esc(t.noTrack)}</p>
   <p class="credit">${esc(t.credit)}</p>
@@ -460,6 +459,64 @@ function sharePage() {
 `;
 }
 
+// ---------------------------------------------------------------------------------------------
+// Privacidad y soporte. El texto sale de `legal/<página>.<idioma>.html`, que trae `import-legal.mjs`
+// de lo que genera la app: acá sólo se le pone el aspecto del sitio. No se indexan, igual que en el
+// sitio legal de la cartera: se llega por el link de la ficha o de la app, no por un buscador.
+const LEGAL_KINDS = ['privacy', 'support'];
+const legalPath = (kind, lang) => `${lang === 'es' ? 'es/' : ''}${kind}/`;
+
+function legalPage(kind, lang) {
+  const t = T[lang];
+  const root = lang === 'es' ? '../../' : '../';
+  const src = fs.readFileSync(new URL(`./legal/${kind}.${lang}.html`, import.meta.url), 'utf8');
+  const title = src.match(/^<!-- title: (.*) -->\n/);
+  if (!title) throw new Error(`legal/${kind}.${lang}.html no empieza con su título: corré import-legal.mjs`);
+  const body = src.slice(title[0].length).replace(/\{\{(\w+)\.(\w+)\}\}/g, (_, k, l) => root + legalPath(k, l));
+  if (body.includes('{{')) throw new Error(`legal/${kind}.${lang}.html tiene una marca sin resolver`);
+  const other = lang === 'en' ? 'es' : 'en';
+  return `<!doctype html>
+<html lang="${lang}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>${title[1]}</title>
+<meta name="theme-color" content="#FFF6EC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1A1622" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<link rel="canonical" href="https://ovilo.app/${legalPath(kind, lang)}">
+<link rel="alternate" hreflang="${other}" href="https://ovilo.app/${legalPath(kind, other)}">
+<link rel="icon" href="${root}assets/img/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="${root}assets/img/icon-180.png">
+<link rel="preload" href="${root}assets/fonts/nunito-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="${root}assets/site.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="../" aria-label="Ovilo">${SYMBOL}<span>Ovilo</span></a>
+  <nav class="langs" aria-label="${esc(t.switchLabel)}">
+    <a href="${root}${legalPath(kind, 'en')}" data-lang="en" lang="en"${lang === 'en' ? ' aria-current="page"' : ''}>English</a>
+    <a href="${root}${legalPath(kind, 'es')}" data-lang="es" lang="es"${lang === 'es' ? ' aria-current="page"' : ''}>Español</a>
+  </nav>
+</header>
+
+<main class="doc">
+${body}</main>
+
+<footer>
+  <nav aria-label="Legal">
+    <a href="../">${esc(t.home)}</a>
+    <a href="${root}${legalPath('privacy', lang)}">${esc(t.privacy)}</a>
+    <a href="${root}${legalPath('support', lang)}">${esc(t.support)}</a>
+  </nav>
+</footer>
+<script src="${root}assets/site.js" defer></script>
+</body>
+</html>
+`;
+}
+
 // Qué le falta a `APP_STORE_URL` para publicarse, o `null` si está bien. `null` (sin publicar) vale.
 // Sin el token del proveedor (`pt`) el link anda igual y App Analytics no cuenta ninguna descarga
 // de compartir: nada falla, así que tiene que fallar acá.
@@ -492,8 +549,15 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   fs.writeFileSync(new URL('./es/index.html', import.meta.url), page(T.es));
   fs.mkdirSync(new URL('./s/', import.meta.url), { recursive: true });
   fs.writeFileSync(new URL('./s/index.html', import.meta.url), sharePage());
-  console.log('index.html, es/index.html, s/index.html');
+  for (const kind of LEGAL_KINDS) {
+    for (const lang of ['en', 'es']) {
+      const dir = new URL(`./${legalPath(kind, lang)}`, import.meta.url);
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(new URL('index.html', dir), legalPage(kind, lang));
+    }
+  }
+  console.log('index.html, es/index.html, s/index.html, privacy/, support/, es/privacy/, es/support/');
 }
 
 export const GAME_IDS = GAMES.map((g) => g.id);
-export { APP_STORE_URL, sharePage };
+export { APP_STORE_URL, sharePage, legalPage, legalPath, LEGAL_KINDS };

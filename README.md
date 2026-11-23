@@ -12,8 +12,8 @@ publicado con GitHub Pages desde `main`.
 Las dos páginas salen de una sola plantilla:
 
 ```
-node build.mjs          # escribe index.html, es/index.html y s/index.html
-node --test test.mjs    # las pruebas del link de compartir
+node build.mjs          # escribe index.html, es/index.html, s/index.html y las de privacidad y soporte
+node --test test.mjs    # las pruebas del link de compartir y de las páginas legales
 ```
 
 Los textos de los dos idiomas están arriba de `build.mjs` (`T.en`, `T.es`). Los estilos, en
@@ -22,6 +22,26 @@ Pages los sirve tal cual, sin compilar nada.
 
 **Todas las rutas son relativas.** Una ruta que empieza con `/` anda en `ovilo.app` y se rompe en
 `fbrussa.github.io/ovilo-web/`.
+
+## Privacidad y soporte
+
+Cuatro páginas, y sus rutas **no se renombran**: van en la ficha de la App Store y las abre la app.
+
+| | Inglés | Español |
+|---|---|---|
+| Privacidad | `https://ovilo.app/privacy/` | `https://ovilo.app/es/privacy/` |
+| Soporte | `https://ovilo.app/support/` | `https://ovilo.app/es/support/` |
+
+El texto no se escribe acá. Sale de la app (`npm run legal:build` en su repo) y se trae con:
+
+```
+node import-legal.mjs <repo de la app>/build/legal/ovilo   # escribe legal/*.html
+node build.mjs
+```
+
+`legal/` guarda sólo el cuerpo de cada página; `build.mjs` le pone el aspecto del sitio. No se
+indexan (`noindex`), igual que en el sitio legal de la cartera. Las páginas viejas de
+`foundryappsglobal.github.io/legal/ovilo/` siguen publicadas: las abre el build 3 de TestFlight.
 
 ## El link de compartir (`s/`)
 

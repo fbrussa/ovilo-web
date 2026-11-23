@@ -4,14 +4,14 @@
 // tal como quedó escrito en `s/index.html`, con un navegador de mentira.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import test from 'node:test';
+import test, { describe, it } from 'node:test';
 import vm from 'node:vm';
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
 
-import { APP_STORE_URL, GAME_IDS, sharePage, shareTarget, storeUrlProblem } from './build.mjs';
+import { APP_STORE_URL, GAME_IDS, LEGAL_KINDS, legalPage, legalPath, sharePage, shareTarget, storeUrlProblem } from './build.mjs';
 
 const STORE = 'https://apps.apple.com/app/apple-store/id6834930963?pt=123&mt=8';
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1';
@@ -132,6 +132,7 @@ function buildWith(value) {
   const dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'ovilo-web-'));
   try {
     execFileSync('cp', ['-R', new URL('./assets', import.meta.url).pathname, dir]);
+    execFileSync('cp', ['-R', new URL('./legal', import.meta.url).pathname, dir]);
     const src = fs.readFileSync(new URL('./build.mjs', import.meta.url), 'utf8');
     const edited = src.replace(/^const APP_STORE_URL = .*;$/m, `const APP_STORE_URL = ${JSON.stringify(value)};`);
     assert.ok(edited.includes(`const APP_STORE_URL = ${JSON.stringify(value)};`), 'no encontré APP_STORE_URL en build.mjs');
@@ -154,4 +155,32 @@ test('node build.mjs pasa con el link de campaña', () => {
   const run = buildWith(STORE);
   assert.equal(run.status, 0, run.stderr);
   assert.equal(run.wrote, true);
+});
+
+// Privacidad y soporte (FO-597): las URLs van en la ficha de la App Store y dentro de la app.
+describe('privacidad y soporte', () => {
+  const pages = LEGAL_KINDS.flatMap((kind) => ['en', 'es'].map((lang) => ({ kind, lang, path: legalPath(kind, lang) })));
+
+  it('las cuatro rutas son las publicadas en la ficha', () => {
+    assert.deepEqual(pages.map((p) => p.path), ['privacy/', 'es/privacy/', 'support/', 'es/support/']);
+  });
+
+  for (const p of pages) {
+    it(`${p.path} está al día con build.mjs, no se indexa y no tiene rutas absolutas`, () => {
+      const html = fs.readFileSync(new URL(`./${p.path}index.html`, import.meta.url), 'utf8');
+      assert.equal(html, legalPage(p.kind, p.lang));
+      assert.match(html, /<meta name="robots" content="noindex, nofollow">/);
+      assert.match(html, new RegExp(`<html lang="${p.lang}">`));
+      assert.doesNotMatch(html, /(href|src)="\//);
+      assert.doesNotMatch(html, /foundryappsglobal/);
+    });
+  }
+
+  it('el pie de la home lleva a las dos, en los dos idiomas', () => {
+    for (const home of ['index.html', 'es/index.html']) {
+      const html = fs.readFileSync(new URL(`./${home}`, import.meta.url), 'utf8');
+      assert.match(html, /<a href="privacy\/">/);
+      assert.match(html, /<a href="support\/">/);
+    }
+  });
 });

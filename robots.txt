@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+# El texto fuente de privacidad y soporte: las páginas son privacy/ y support/.
+Disallow: /legal/
