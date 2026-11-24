@@ -13,7 +13,7 @@ Las dos páginas salen de una sola plantilla:
 
 ```
 node build.mjs          # escribe index.html, es/index.html, s/index.html y las de privacidad y soporte
-node --test test.mjs    # las pruebas del link de compartir y de las páginas legales
+node --test test.mjs    # las pruebas del link de compartir, de la reserva y de las páginas legales
 ```
 
 Los textos de los dos idiomas están arriba de `build.mjs` (`T.en`, `T.es`). Los estilos, en
@@ -52,16 +52,27 @@ también sale de `build.mjs`):
   `ct=share-<juego>`: App Analytics cuenta las descargas que vienen de compartir, por juego. Es de
   Apple; el sitio no mide nada.
 - **En cualquier otro lado**, el sitio, en el idioma del navegador.
-- **Hasta que la app esté publicada** (`APP_STORE_URL` en `null`), el sitio en todos los casos.
+- **Sin `APP_STORE_URL`** (`null`), el sitio en todos los casos.
 
 GitHub Pages no redirige desde el servidor, así que lo decide un script en la página. Se prueba con
 `node --test test.mjs`.
 
-## Cuando la app esté publicada
+## El link de la App Store y la reserva
 
-En `build.mjs`, poner el link de la App Store en `APP_STORE_URL` y correr `node build.mjs`: el
-badge pasa a ser un link, desaparece «Próximamente» y el link de compartir empieza a mandar el
-iPhone y el iPad a la ficha. **Es el único dato que cambia.**
+`APP_STORE_URL`, en `build.mjs`, es el link de la ficha: con él el badge es un link (con
+`ct=web`, para separar en App Analytics lo que viene del sitio de lo que viene de compartir) y el
+link de compartir manda el iPhone y el iPad a la ficha. Con `null`, el sitio dice «Próximamente».
+
+La 1.0 sale como **reserva** (FO-609). `RELEASE`, también en `build.mjs`, es el instante en que la
+app pasa a poder descargarse, y **es el único lugar donde está la fecha**. Hasta entonces el botón
+lleva el cartel «Pre-order» / «Reserva» y, debajo, «Available December 16» / «Disponible el 16 de
+diciembre». Ese día el texto **se va solo, sin volver a publicar**: un script en el `<head>`
+compara la hora del navegador con `RELEASE` y esconde lo que lleva la clase `pre`. Un
+`node build.mjs` corrido después de la fecha ya no escribe nada de la reserva. Si Apple mueve la
+fecha, se cambia `RELEASE` y se vuelve a correr el script.
+
+El badge es el de «Download on the App Store»: el de «Pre-order» de Apple no se pudo bajar de
+App Store Marketing Tools sin sesión, así que la reserva la dicen el cartel y la línea.
 
 Para que App Analytics cuente las descargas por juego, ese link tiene que ser el de campaña, con el
 token del proveedor (`pt`): `https://apps.apple.com/app/apple-store/id6834930963?pt=<proveedor>&mt=8`.
