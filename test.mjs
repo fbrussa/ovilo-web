@@ -11,7 +11,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
 
-import { APP_STORE_URL, GAME_IDS, LEGAL_KINDS, legalPage, legalPath, sharePage, shareTarget, storeUrlProblem } from './build.mjs';
+import { APP_STORE_URL, GAME_IDS, LEGAL_KINDS, RELEASE, T, inPreorder, legalPage, legalPath, page, releaseDay, releaseProblem, sharePage, shareTarget, siteStoreUrl, storeUrlProblem } from './build.mjs';
 
 const STORE = 'https://apps.apple.com/app/apple-store/id6834930963?pt=123&mt=8';
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0 Mobile/15E148 Safari/604.1';
@@ -181,6 +181,110 @@ describe('privacidad y soporte', () => {
       const html = fs.readFileSync(new URL(`./${home}`, import.meta.url), 'utf8');
       assert.match(html, /<a href="privacy\/">/);
       assert.match(html, /<a href="support\/">/);
+    }
+  });
+});
+
+// La reserva (FO-609): hasta la fecha de salida el sitio dice que la app se reserva y cuándo sale;
+// desde ese instante el texto se va solo, sin volver a publicar.
+describe('la reserva', () => {
+  const DAY = 24 * 3600 * 1000;
+  const at = Date.parse('2026-12-16T08:00:00Z');
+  const opts = (now) => ({ store: STORE, release: '2026-12-16T08:00:00Z', now });
+  const PRE = { en: [/Pre-order/, /Available December 16/], es: [/Reserva/, /Disponible el 16 de diciembre/] };
+
+  // El script del <head> tal como quedó escrito, con un reloj de mentira: devuelve si la página
+  // quedó marcada como `released`, que es lo que esconde `.pre` en el CSS.
+  function released(html, now) {
+    const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]).find((x) => x.includes("' released'"));
+    if (!script) return null;
+    const document = { documentElement: { className: '' } };
+    vm.runInNewContext(script, { Date: { now: () => now }, document });
+    return / released\b/.test(document.documentElement.className);
+  }
+  // Lo que se lee en la página: sin lo que lleva la clase que el CSS esconde en ese estado.
+  const visible = (html, isReleased) => html.replace(new RegExp(`<(span|p) class="[^"]*\\b${isReleased ? 'pre' : 'post'}\\b[^"]*">[^<]*</\\1>`, 'g'), '');
+
+  it('la fecha sale de RELEASE, en los dos idiomas', () => {
+    assert.equal(releaseDay('en', '2026-12-16T08:00:00Z'), 'December 16');
+    assert.equal(releaseDay('es', '2026-12-16T08:00:00Z'), '16 de diciembre');
+    assert.equal(releaseDay('en', '2027-01-05T08:00:00Z'), 'January 5');
+    assert.equal(releaseProblem(RELEASE), null);
+    assert.equal(releaseProblem(null), null);
+    assert.match(releaseProblem('16/12/2026'), /RELEASE/);
+    assert.match(releaseProblem('2026-12-16'), /RELEASE/);
+  });
+
+  it('el CSS esconde .pre cuando la página está marcada como released, y .post cuando no', () => {
+    const css = fs.readFileSync(new URL('./assets/site.css', import.meta.url), 'utf8');
+    assert.match(css, /\.released \.pre, html:not\(\.released\) \.post \{ display: none; \}/);
+  });
+
+  for (const lang of ['en', 'es']) {
+    it(`${lang}: antes del 16/12 dice que es una reserva y la fecha`, () => {
+      const html = page(T[lang], opts(at - 20 * DAY));
+      for (const now of [at - 20 * DAY, at - 1]) {
+        assert.equal(released(html, now), false);
+        for (const re of PRE[lang]) assert.match(visible(html, false), re);
+      }
+      assert.doesNotMatch(html, /Coming soon|Próximamente/);
+    });
+
+    it(`${lang}: desde el 16/12 el texto de reserva se va solo, sin volver a publicar`, () => {
+      const html = page(T[lang], opts(at - 20 * DAY));
+      for (const now of [at, at + 1, at + 300 * DAY]) {
+        assert.equal(released(html, now), true);
+        const seen = visible(html, true);
+        assert.doesNotMatch(seen, /Pre-order|Reserva|Resérvala|December|diciembre/);
+        assert.match(seen, lang === 'es' ? /<p class="post">En iPhone y iPad\.<\/p>/ : /<p class="post">On iPhone and iPad\.<\/p>/);
+        // El botón sigue ahí, con su link.
+        assert.match(seen, /<a class="store" href="https:\/\/apps\.apple\.com\//);
+      }
+    });
+
+    it(`${lang}: un build corrido después del 16/12 ya no escribe nada de la reserva`, () => {
+      const html = page(T[lang], opts(at + DAY));
+      assert.doesNotMatch(html, /Pre-order|Reserva|Resérvala|December|diciembre|released|class="[^"]*\b(pre|post)\b/);
+      assert.match(html, /<a class="store" href="https:\/\/apps\.apple\.com\//);
+    });
+
+    it(`${lang}: sin la app en la tienda, «Próximamente» y ningún link`, () => {
+      const html = page(T[lang], { store: null, release: '2026-12-16T08:00:00Z', now: at - DAY });
+      assert.match(html, /Coming soon|Próximamente/);
+      assert.doesNotMatch(html, /apps\.apple\.com|Pre-order|Resérvala/);
+    });
+  }
+
+  it('reserva sólo con la app en la tienda y antes de la fecha', () => {
+    assert.equal(inPreorder(STORE, RELEASE, Date.parse(RELEASE) - 1), true);
+    assert.equal(inPreorder(STORE, RELEASE, Date.parse(RELEASE)), false);
+    assert.equal(inPreorder(null, RELEASE, 0), false);
+    assert.equal(inPreorder(STORE, null, 0), false);
+  });
+
+  it('el botón del sitio lleva pt y ct=web; s/ sigue con ct=share-<juego>', () => {
+    const to = new URL(siteStoreUrl(STORE));
+    assert.equal(to.searchParams.get('pt'), '123');
+    assert.equal(to.searchParams.get('ct'), 'web');
+    assert.equal(to.searchParams.getAll('ct').length, 1);
+  });
+
+  it('las dos páginas publicadas: el link de la ficha con ct=web, sin «Próximamente», y con la reserva hasta la fecha', () => {
+    if (APP_STORE_URL === null) return;
+    for (const [file, lang] of [['index.html', 'en'], ['es/index.html', 'es']]) {
+      const html = fs.readFileSync(new URL(`./${file}`, import.meta.url), 'utf8');
+      const href = /<a class="store" href="([^"]+)"/.exec(html)[1].replace(/&amp;/g, '&');
+      assert.equal(href, siteStoreUrl(APP_STORE_URL));
+      assert.equal(new URL(href).searchParams.get('ct'), 'web');
+      assert.doesNotMatch(html, /Coming soon|Próximamente/);
+      // Publicadas antes de la fecha, llevan el texto de reserva y el script que lo saca.
+      if (released(html, Date.parse(RELEASE) - 1) === false) {
+        for (const re of PRE[lang]) assert.match(html, re);
+        assert.equal(released(html, Date.parse(RELEASE)), true);
+      }
+      // Nada de terceros: la única dirección de afuera es la ficha.
+      const hosts = [...html.matchAll(/https?:\/\/([^/"'\s]+)/g)].map((m) => m[1]);
+      assert.deepEqual([...new Set(hosts)].filter((h) => !['ovilo.app', 'apps.apple.com', 'www.w3.org'].includes(h)), []);
     }
   });
 });

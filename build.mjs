@@ -8,7 +8,7 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-// Cuando la app esté publicada: poner acá el link de la App Store y volver a correr el script.
+// El link de la ficha en la App Store.
 // Con `null`, el badge se muestra sin link y con el cartel de «Próximamente», y el link de
 // compartir (`s/`) lleva al sitio en todos los casos.
 //
@@ -18,7 +18,19 @@ import { fileURLToPath } from 'node:url';
 // `pt` sale de generar un link de campaña en App Store Connect (Analytics > Acquisition >
 // Campaigns > +) y es el mismo para toda la cuenta. `s/` le suma `ct=share-<juego>`.
 // Sin `pt`, este script corta sin escribir nada (`storeUrlProblem`).
-const APP_STORE_URL = null;
+const APP_STORE_URL = 'https://apps.apple.com/app/apple-store/id6834930963?pt=354277&mt=8';
+
+// La app sale como reserva (FO-609): hasta este instante se puede reservar, no descargar, y el sitio
+// lo dice. Es el `releaseDate` que devuelve la API pública de iTunes para la ficha. **La fecha vive
+// sólo acá**: de ella salen el día que se lee en la página («December 16», «16 de diciembre») y el
+// momento en que el texto de reserva se va solo, sin volver a publicar — lo decide un script en la
+// página (`releasedScript`), y un build corrido después de la fecha ya ni lo escribe.
+// Con `null`, la app está publicada sin reserva.
+const RELEASE = '2026-12-16T08:00:00Z';
+
+// El token de campaña del botón del sitio: separa en App Analytics lo que viene del sitio de lo que
+// viene de compartir (`ct=share-<juego>`, que pone `s/`).
+const SITE_CAMPAIGN = 'web';
 
 // Privacidad y soporte viven en este sitio (FO-597): `privacy/`, `support/` y lo mismo bajo `es/`.
 // Son las URLs de la ficha de la App Store y las que abre la app: no se renombran.
@@ -54,6 +66,10 @@ const T = {
     sub: 'Crosswords, word search, sudoku and more: a new level of each one every day, and A to Z every Friday. One free every day; all of them with Ovilo Pro.',
     soon: 'Coming soon',
     soonNote: 'Coming soon to iPhone and iPad.',
+    pre: 'Pre-order',
+    preDate: (day) => `Available ${day}`,
+    preNote: (day) => `Pre-order it now on the App Store. Available ${day} on iPhone and iPad.`,
+    outNote: 'On iPhone and iPad.',
     badgeAlt: 'Download on the App Store',
     videoLabel: 'A 30-second look at Ovilo',
     videoNote: '',
@@ -100,6 +116,10 @@ const T = {
     sub: 'Crucigramas, sopa de letras, sudoku y más: un nivel nuevo de cada uno todos los días, y De la A a la Z cada viernes. Gratis, uno por día; con Ovilo Pro, todos.',
     soon: 'Próximamente',
     soonNote: 'Próximamente en iPhone y iPad.',
+    pre: 'Reserva',
+    preDate: (day) => `Disponible el ${day}`,
+    preNote: (day) => `Resérvala ya en el App Store. Disponible el ${day} en iPhone y iPad.`,
+    outNote: 'En iPhone y iPad.',
     badgeAlt: 'Descárgalo en el App Store',
     videoLabel: 'Ovilo en 30 segundos',
     videoNote: '',
@@ -268,12 +288,36 @@ const ICONS = {
 };
 const icon = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]}</svg>`;
 
-function page(t) {
+// El día de salida como se lee en la página, sacado de `RELEASE`: «December 16», «16 de diciembre».
+// En UTC, que es el día de la ficha.
+export const releaseDay = (lang, release = RELEASE) =>
+  new Date(release).toLocaleDateString(lang === 'es' ? 'es' : 'en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' });
+
+// ¿Hay que mostrar el texto de reserva? Sólo con la app en la tienda y antes de la fecha de salida.
+export const inPreorder = (store, release, now) => store !== null && release !== null && now < Date.parse(release);
+
+// El script que saca el texto de reserva cuando llega la fecha: marca la página como `released` y
+// el CSS esconde lo que lleva `.pre` y muestra lo que lleva `.post`. Va en el <head>, antes de que
+// se pinte nada. ES5, como `assets/site.js`.
+export const releasedScript = (release) =>
+  `if (Date.now() >= ${Date.parse(release)}) document.documentElement.className += ' released';`;
+
+// El link del botón del sitio: el de la tienda con su token de campaña.
+export const siteStoreUrl = (store) => store + (store.indexOf('?') < 0 ? '?' : '&') + 'ct=' + SITE_CAMPAIGN;
+
+function page(t, { store = APP_STORE_URL, release = RELEASE, now = Date.now() } = {}) {
   const b = t.base;
+  const pre = inPreorder(store, release, now);
+  const day = pre ? releaseDay(t.lang, release) : '';
   const badge = `<img class="badge" src="${b}assets/img/app-store-badge-${t.lang}.svg" width="150" height="50" alt="${esc(t.badgeAlt)}">`;
-  const cta = APP_STORE_URL
-    ? `<a class="store" href="${esc(APP_STORE_URL)}">${badge}</a>`
+  const cta = store
+    ? `<a class="store" href="${esc(siteStoreUrl(store))}">${pre ? `<span class="soon pre">${esc(t.pre)}</span>` : ''}${badge}${pre ? `<span class="store-date pre">${esc(t.preDate(day))}</span>` : ''}</a>`
     : `<div class="store" aria-label="${esc(t.soonNote)}"><span class="soon">${esc(t.soon)}</span>${badge}</div>`;
+  const endNote = !store
+    ? `<p>${esc(t.soonNote)}</p>`
+    : pre
+      ? `<p class="pre">${esc(t.preNote(day))}</p>\n    <p class="post">${esc(t.outNote)}</p>`
+      : `<p>${esc(t.outNote)}</p>`;
   const poster = t.lang === 'es' ? 'poster.jpg' : 'poster-en.jpg';
   const video = `<video class="screen" src="${b}assets/video/ovilo-promo-${t.lang}.mp4" poster="${b}assets/video/${poster}" width="720" height="1280" autoplay muted loop playsinline controls preload="metadata" aria-label="${esc(t.videoLabel)}"></video>`;
 
@@ -316,7 +360,11 @@ function page(t) {
 <link rel="icon" href="${b}assets/img/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="${b}assets/img/icon-180.png">
 <link rel="preload" href="${b}assets/fonts/nunito-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="${b}assets/site.css">
+<link rel="stylesheet" href="${b}assets/site.css">${pre ? `
+<script>
+// Desde el día de salida, el texto de reserva se va solo.
+${releasedScript(release)}
+</script>` : ''}
 <script>
 // El idioma del navegador manda la primera vez; después, el que la persona eligió en el selector.
 (function () {
@@ -377,7 +425,7 @@ function page(t) {
   <section class="end reveal">
     ${SYMBOL}
     <h2>${esc(t.endTitle)}</h2>
-    <p>${esc(t.soonNote)}</p>
+    ${endNote}
   </section>
 </main>
 
@@ -537,9 +585,18 @@ export function storeUrlProblem(url) {
   return null;
 }
 
+// Qué le falta a `RELEASE`, o `null` si está bien. `null` (publicada sin reserva) vale.
+export function releaseProblem(release) {
+  if (release === null) return null;
+  if (typeof release !== 'string' || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(release) || Number.isNaN(Date.parse(release))) {
+    return 'RELEASE tiene que ser una fecha con hora en UTC, como 2026-12-16T08:00:00Z, o null.';
+  }
+  return null;
+}
+
 // `node build.mjs` escribe las páginas; importarlo (`test.mjs`) no escribe nada.
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const problem = storeUrlProblem(APP_STORE_URL);
+  const problem = storeUrlProblem(APP_STORE_URL) ?? releaseProblem(RELEASE);
   if (problem !== null) {
     console.error(`build.mjs: ${problem}`);
     process.exit(1);
@@ -560,4 +617,4 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 }
 
 export const GAME_IDS = GAMES.map((g) => g.id);
-export { APP_STORE_URL, sharePage, legalPage, legalPath, LEGAL_KINDS };
+export { APP_STORE_URL, RELEASE, T, page, sharePage, legalPage, legalPath, LEGAL_KINDS };

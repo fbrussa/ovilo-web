@@ -97,6 +97,9 @@ h1 .accent { color: var(--accent); }
 .store { margin-top: 30px; display: inline-flex; flex-direction: column; align-items: center; gap: 14px; text-decoration: none; }
 .badge { height: 50px; width: auto; margin: 13px; }
 .soon { font-weight: 800; font-size: .86rem; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); background: var(--surface); border: 1px solid var(--border); padding: 6px 14px; border-radius: 999px; }
+.store-date { font-weight: 700; font-size: 1rem; color: var(--ink-soft); }
+/* La reserva (FO-609): desde el día de salida, un script del <head> marca la página como `released`. */
+.released .pre, html:not(.released) .post { display: none; }
 @media (prefers-color-scheme: dark) { .badge { outline: 1px solid #5d5566; outline-offset: -1px; border-radius: 9px; } }
 
 .floaters { position: absolute; inset: 0; overflow: hidden; pointer-events: none; margin: 0; max-width: none; }
